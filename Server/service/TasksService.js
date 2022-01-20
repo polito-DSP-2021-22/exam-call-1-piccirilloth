@@ -45,7 +45,7 @@ exports.addTask = function(task, owner) {
                     let operation = "create";
                     console.log(task);
                     let message = new MQTTPublicTaskMessage(operation, task);
-                    mqtt.publishPublicTaskMessage(task.id, message);
+                    mqtt.publishPublicTaskMessage(createdTask.id, message);
                 }
                 resolve(createdTask);
             }

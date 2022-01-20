@@ -49,7 +49,8 @@ const PublicList = (props) => {
 
   // handle change event
   const handlePageChange = pageNumber => {
-      getTasks(pageNumber);
+      if(localStorage.getItem("currentPage") != pageNumber)
+        getTasks(pageNumber);
   }
 
 

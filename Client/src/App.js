@@ -18,7 +18,7 @@ import Assignments from './components/Assignments';
 import OnlineList from './components/OnlineList';
 import MiniOnlineList from './components/MiniOnlineList';
 
-import { Route, useRouteMatch, useHistory, Switch, Redirect, useLocation } from 'react-router-dom';
+import { Route, useRouteMatch, useHistory, Switch, Redirect } from 'react-router-dom';
 
 
 import dayjs from 'dayjs';
@@ -70,6 +70,7 @@ const Main = () => {
   const [userList, setUserList] = useState([]);
   const [onlineList, setOnlineList] = useState([]);
   const [assignedTaskList, setAssignedTaskList] = useState([]);
+  const [publicTaskList, setPublicTaskList] = useState([]); // state representing the list of public tasks 
   const [dirty, setDirty] = useState(true);
 
   const MODAL = { CLOSED: -2, ADD: -1 };
@@ -83,8 +84,6 @@ const Main = () => {
   // active filter is read from the current url
   const match = useRouteMatch('/list/:filter');
   const activeFilter = (match && match.params && match.params.filter) ? match.params.filter : 'owned';
-
-  const [isPublic, setIsPublic] = useState(false);
 
   const history = useHistory();
   // if another filter is selected, redirect to a new view/url
@@ -118,12 +117,15 @@ const Main = () => {
           // the message is related to a public task
           let parsedMessage = JSON.parse(message);
           if(parsedMessage.operation === "create") {
+            console.log(topic)
             parsedMessage.id = topic.split("/")[1];
-            //setTaskList([...taskList, parsedMessage]);
-            //setDirty(true);
-            console.log(isPublic);
-            if(isPublic)
-              refreshPublic();
+            console.log(parsedMessage);
+            console.log(publicTaskList);
+            parsedMessage.deadline = dayjs(parsedMessage.deadline);
+            setPublicTaskList([...publicTaskList, parsedMessage]);
+            //console.log(isPublic);
+            //if(isPublic)
+            refreshPublic();
           }
         }
       } catch (e) {
@@ -266,7 +268,7 @@ const Main = () => {
   const getPublicTasks = () => {
     API.getPublicTasks()
       .then(tasks => {
-        setTaskList(tasks);
+        setPublicTaskList(tasks);
       })
       .catch(e => handleErrors(e));
   }
@@ -303,8 +305,8 @@ const Main = () => {
   const refreshPublic = (page) => {
     API.getPublicTasks(page)
       .then(tasks => {
-        setTaskList(tasks);
-        setDirty(false);
+        setPublicTaskList(tasks);
+        // setDirty(true);
       })
       .catch(e => handleErrors(e));
   }
@@ -339,6 +341,7 @@ const Main = () => {
           client.subscribe(String("public/#"), { qos: 0, retain: true });
           console.log("Subscribing to public/#");
           setTaskList(tasks);
+          setPublicTaskList(tasks);
           setDirty(false);
         })
         .catch(e => handleErrors(e));
@@ -403,6 +406,7 @@ const Main = () => {
     setLoggedIn(false);
     setUser(null);
     setTaskList([]);
+    setPublicTaskList([]);
     setDirty(true);
     localStorage.removeItem('userId');
     localStorage.removeItem('email');
@@ -437,7 +441,7 @@ const Main = () => {
             </Col>
             <Col className="col-8">
               <Row className="vh-100 below-nav">
-                <PublicMgr publicList={taskList} refreshPublic={refreshPublic}></PublicMgr>
+                <PublicMgr publicList={publicTaskList} refreshPublic={refreshPublic}></PublicMgr>
               </Row>
             </Col>
           </Row>
