@@ -109,14 +109,14 @@ const Main = () => {
 
     client.on('message', (topic, message) => {
       try {
-        if(!topic.startsWith("public")) {
+        if (!topic.startsWith("public")) {
           var parsedMessage = JSON.parse(message);
           if (parsedMessage.status == "deleted") client.unsubscribe(topic);
           displayTaskSelection(topic, parsedMessage);
         } else {
           // the message is related to a public task
           let parsedMessage = JSON.parse(message);
-          if(parsedMessage.operation === "create") {
+          if (parsedMessage.operation === "create") {
             console.log(topic)
             parsedMessage.id = topic.split("/")[1];
             console.log(parsedMessage);
@@ -126,6 +126,35 @@ const Main = () => {
             //console.log(isPublic);
             //if(isPublic)
             refreshPublic();
+          } else if(parsedMessage.operation === "delete") {
+            let deleteId = topic.split("/")[1];
+            let temp = publicTaskList;
+            temp.filter(elem => elem.id == deleteId);
+            setPublicTaskList(temp);
+            refreshPublic();
+          } else if(parsedMessage.operation === "update") {
+            let updatedId = topic.split("/")[1];
+            let temp = publicTaskList;
+            temp.map(elem => {
+              if(elem.id == updatedId) {
+                if(parsedMessage.description !== undefined) 
+                  elem.description = parsedMessage.description;
+                if(parsedMessage.important !== undefined)
+                  elem.important = parsedMessage.important;
+                if(parsedMessage.project !== undefined)
+                  elem.project = parsedMessage.project;
+                if(parsedMessage.deadline !== undefined)
+                  elem.deadline = parsedMessage.deadline;
+                if(parsedMessage.private !== undefined) {
+                  elem.private = parsedMessage.private;
+                }
+              }
+            });
+            if(parsedMessage.private !== undefined) {
+              if(parsedMessage.private === true) {
+                
+              }
+            }
           }
         }
       } catch (e) {
@@ -259,6 +288,7 @@ const Main = () => {
             client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
             console.log("Subscribing to " + tasks[i].id);
           }
+          client.unsubscribe(String("public/#"));
           setTaskList(tasks);
         })
         .catch(e => handleErrors(e));
@@ -268,6 +298,8 @@ const Main = () => {
   const getPublicTasks = () => {
     API.getPublicTasks()
       .then(tasks => {
+        client.subscribe(String("public/#"), { qos: 0, retain: true });
+        console.log("Subscribing to public/#");
         setPublicTaskList(tasks);
       })
       .catch(e => handleErrors(e));
@@ -306,6 +338,7 @@ const Main = () => {
     API.getPublicTasks(page)
       .then(tasks => {
         setPublicTaskList(tasks);
+        // setTaskList(tasks); //align public and non public task lists
         // setDirty(true);
       })
       .catch(e => handleErrors(e));
@@ -338,10 +371,8 @@ const Main = () => {
             client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
             console.log("Subscribing to " + tasks[i].id)
           }
-          client.subscribe(String("public/#"), { qos: 0, retain: true });
-          console.log("Subscribing to public/#");
           setTaskList(tasks);
-          setPublicTaskList(tasks);
+          // setPublicTaskList(tasks);
           setDirty(false);
         })
         .catch(e => handleErrors(e));

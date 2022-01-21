@@ -89,6 +89,11 @@ exports.deleteTask = function(taskId, owner) {
                                 mqtt.publishTaskMessage(taskId, new MQTTTaskMessage("deleted", null, null));
                                 //mqtt.publishTaskMessage(taskId, null); //uncomment if we want to clear the last retained message
                                 mqtt.deleteMessage(taskId);
+
+                                let message = {
+                                    operation: "delete"
+                                };
+                                mqtt.publishPublicTaskMessage(taskId, message);
                                 resolve(null);
                             }
                         })
@@ -344,6 +349,20 @@ exports.updateSingleTask = function(task, taskId, owner) {
                             if (err) {
                                 reject(err);
                             } else {
+                                let message;
+                                if(task.description !== undefined)
+                                    message.description = task.description;
+                                if(task.important !== undefined)
+                                    message.important = task.important;
+                                if(task.project !== undefined)
+                                    message.project = task.project;
+                                if(task.deadline !== undefined)
+                                    message.deadline = task.deadline;
+                                if(task.private !== undefined) {
+                                    message.private = task.private;
+                                }
+                                message.operation = "update";
+                                mqtt.publishPublicTaskMessage(taskId, message);
                                 resolve(null);
                             }
 
