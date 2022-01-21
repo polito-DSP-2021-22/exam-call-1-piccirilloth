@@ -54,6 +54,7 @@ module.exports.publishTaskMessage = function publishTaskMessage(taskId, message)
 };
 
 module.exports.publishPublicTaskMessage = function publishTaskMessage(taskId, message) {
+  console.log(message);
   mqtt_connection.publish(String("public/" + taskId), JSON.stringify(message), { qos: 0, retain: true })
 };
 
