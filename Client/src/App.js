@@ -123,7 +123,8 @@ const Main = () => {
             parsedMessage.deadline = parsedMessage.deadline === undefined ? undefined : dayjs(parsedMessage.deadline);
             console.log(parsedMessage);
             console.log(publicTaskList);
-            setPublicTaskList([...publicTaskList, parsedMessage]);
+            //setPublicTaskList([...publicTaskList, parsedMessage]);
+            getPublicTasks();
             //console.log(isPublic);
             //if(isPublic)
             //refreshPublic();
@@ -309,8 +310,6 @@ const Main = () => {
   const getPublicTasks = () => {
     API.getPublicTasks()
       .then(tasks => {
-        client.subscribe(String("public/#"), { qos: 0, retain: true });
-        console.log("Subscribing to public/#");
         setPublicTaskList(tasks);
         console.log(publicTaskList);
       })
@@ -360,6 +359,7 @@ const Main = () => {
   const refreshTasks = (filter, page) => {
     API.getTasks(filter, page)
       .then(tasks => {
+        console.log(filter);
         for (var i = 0; i < tasks.length; i++) {
           client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
           console.log("Subscribing to " + tasks[i].id)
@@ -407,6 +407,8 @@ const Main = () => {
             client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
             console.log("Subscribing to " + tasks[i].id)
           }
+          /*client.subscribe(String("public/#"), { qos: 0, retain: true });
+          console.log("Subscribing to public/#");*/
           setTaskList(tasks);
           // setPublicTaskList(tasks);
           setDirty(false);
