@@ -34,6 +34,10 @@
             "description": "this property is set to true if the task is marked as private, false if the task is shared (default value: true)",
             "default": "true"
         },
+        "previousPrivateValue": {
+            "type": "boolean",
+            "description": "this property is set to true if the task is marked as private, false if the task is shared (default value: true)",
+        },
         "project": {
             "type": "string",
             "description": "project in which the task is inserted",
@@ -80,6 +84,20 @@
                     "deadline",
                     "completed",
                     "owner"
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "operation": {
+                        "const": "update"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "previousPrivateValue"
                 ]
             }
         }

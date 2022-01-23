@@ -355,7 +355,7 @@ const Main = () => {
         setTaskList(tasks);
         // setTaskList(tasks); //align public and non public task lists
         // setDirty(true);
-        setDirty(true);
+        setDirty(false);
       })
       .catch(e => handleErrors(e));
   }
@@ -394,8 +394,6 @@ const Main = () => {
           })
           .catch(e => handleErrors(e));
       } else */if (dirty) {
-        console.log(activeFilter);
-        console.log(dirty);
         API.getTasks(activeFilter, localStorage.getItem('currentPage'))
           .then(tasks => {
             for (var i = 0; i < tasks.length; i++) {
