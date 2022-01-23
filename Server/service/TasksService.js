@@ -6,6 +6,7 @@ var constants = require('../utils/constants.js');
 const mqtt = require('../components/mqtt');
 const MQTTTaskMessage = require('../components/mqtt_task_message.js');
 const MQTTPublicTaskMessage = require('../components/mqtt_public_task_message.js');
+const dayjs = require('dayjs');
 
 
 /**
@@ -35,7 +36,7 @@ exports.addTask = function(task, owner) {
                         "description": createdTask.description,
                         "important": createdTask.important,
                         "private": createdTask.private,
-                        "deadline": createdTask.deadline,
+                        "deadline": dayjs(createdTask.deadline),
                         "project": createdTask.project,
                         "completed": createdTask.completed,
                         "active": createdTask.active,

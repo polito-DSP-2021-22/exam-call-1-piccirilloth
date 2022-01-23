@@ -65,11 +65,11 @@ const App = () => {
 const Main = () => {
 
   // This state is an object containing the list of tasks, and the last used ID (necessary to create a new task that has a unique ID)
-  const [taskList, setTaskList] = useState([]);
   const [OwnedTaskList, setOwnedTaskList] = useState([]);
   const [userList, setUserList] = useState([]);
   const [onlineList, setOnlineList] = useState([]);
   const [assignedTaskList, setAssignedTaskList] = useState([]);
+  const [taskList, setTaskList] = useState([]);
   //const [publicTaskList, setPublicTaskList] = useState([]); // state representing the list of public tasks 
   const [dirty, setDirty] = useState(true);
 
@@ -119,10 +119,9 @@ const Main = () => {
           // TODO: the operation is not part of the message!!
           let parsedMessage = JSON.parse(message);
           if (parsedMessage.operation === "create") {
-            parsedMessage.id = topic.split("/")[1];
+            parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: dayjs(parsedMessage.deadline) };
             console.log(parsedMessage);
             console.log(taskList);
-            parsedMessage.deadline = dayjs(parsedMessage.deadline);
             setTaskList([...taskList, parsedMessage]);
             refreshPublic();
             //console.log(isPublic);
@@ -316,6 +315,7 @@ const Main = () => {
         client.subscribe(String("public/#"), { qos: 0, retain: false });
         console.log("Subscribing to public/#");
         setTaskList(tasks);
+        console.log(taskList);
       })
       .catch(e => handleErrors(e));
   }
