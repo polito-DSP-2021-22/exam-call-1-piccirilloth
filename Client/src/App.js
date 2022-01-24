@@ -108,7 +108,8 @@ const Main = () => {
           newList.push(parsedMessage);
         }
       } else {
-        if(localStorage.getItem("totalPages")*10 - localStorage.getItem("totalItems")*localStorage.getItem("totalPages") == 0)
+        let numElemLastPage = localStorage.getItem("totalItems") - (localStorage.getItem("totalPages")-1)*10;
+        if(numElemLastPage == 10)
           toRefresh = true;
         else {
           localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
@@ -206,39 +207,6 @@ const Main = () => {
           } else if (parsedMessage.operation === "update") {
             let updatedId = topic.split("/")[1];
             updatePublicTask(updatedId);
-            let temp = taskList;
-            let elemToUpdate = taskList.find(elem => elem.id == updatedId);
-            console.log(parsedMessage);
-            //refreshPublic();
-            if (parsedMessage.previousPrivateValue !== parsedMessage.private) {
-              // the private prop has changed
-              if (parsedMessage.private === true) {
-                // the task hase become private so we have to delete it from the publicTaskList
-                temp.filter(elem => elem.id != updatedId);
-                setTaskList(temp);
-                refreshPublic();
-              } else {
-                // the element has become public, so we have to add it to the publicTaskList
-                refreshPublic();
-              }
-            } else if (elemToUpdate !== undefined) {
-              //substitute the old element with the new one
-              elemToUpdate.id = updatedId;
-              elemToUpdate.description = parsedMessage.description;
-              elemToUpdate.important = parsedMessage.important;
-              elemToUpdate.project = parsedMessage.project;
-              elemToUpdate.deadline = parsedMessage.deadline;
-              elemToUpdate.private = parsedMessage.private;
-              temp.map(elem => {
-                if (elem.id == updatedId)
-                  return elemToUpdate;
-                else
-                  return elem;
-              });
-              setTaskList(temp);
-              refreshPublic();
-            } else
-              refreshPublic();
           }
         }
       } catch (e) {
