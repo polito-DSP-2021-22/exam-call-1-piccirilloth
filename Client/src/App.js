@@ -23,6 +23,7 @@ import { Route, useRouteMatch, useHistory, Switch, Redirect } from 'react-router
 
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
+import { parse } from 'path';
 dayjs.extend(isToday);
 
 const EventEmitter = require('events');
@@ -72,6 +73,7 @@ const Main = () => {
   const [taskList, setTaskList] = useState([]);
   //const [publicTaskList, setPublicTaskList] = useState([]); // state representing the list of public tasks 
   const [dirty, setDirty] = useState(true);
+  const [publicDirty, setPublicDirty] = useState(false);
 
 
   const MODAL = { CLOSED: -2, ADD: -1 };
@@ -92,6 +94,29 @@ const Main = () => {
     history.push("/list/" + filter);
   }
 
+  const addNewPublicTask = (parsedMessage) => {
+    let toRefresh = false;
+    setTaskList(taskListold => {
+      let newList = taskListold;
+      if(newList.length < 10) {
+        let flag = true;
+        newList.forEach(elem => {
+          if(elem.id >= parsedMessage.id)
+            flag = false;
+        });
+        if(flag) {
+          newList.push(parsedMessage);
+          return [...newList];
+        } else 
+          return [...newList];
+      } else {
+        toRefresh = true;
+        return [...newList];
+      }
+    });
+    if(toRefresh)
+      refreshPublic();
+  }
 
   useEffect(() => {
 
@@ -119,20 +144,23 @@ const Main = () => {
           // TODO: the operation is not part of the message!!
           let parsedMessage = JSON.parse(message);
           if (parsedMessage.operation === "create") {
-            parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: dayjs(parsedMessage.deadline) };
+            parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: parsedMessage.deadline == undefined ? undefined :  dayjs(parsedMessage.deadline) };
             console.log(parsedMessage);
-            console.log(taskList);
-            setTaskList([...taskList, parsedMessage]);
-            refreshPublic();
+            addNewPublicTask(parsedMessage);
+            //setTaskList([...taskList, parsedMessage]);
+            //refreshPublic();
             //console.log(isPublic);
             //if(isPublic)
             //refreshPublic();
           } else if (parsedMessage.operation === "delete") {
             let deleteId = topic.split("/")[1];
-            let temp = taskList;
-            temp.filter(elem => elem.id != deleteId);
-            setTaskList(temp);
-            refreshPublic();
+            setTaskList(oldList => {
+              let temp = oldList;
+              temp.filter(elem => elem.id != deleteId);
+              console.log(temp);
+              return [...temp];
+            });
+            //refreshPublic();
           } else if (parsedMessage.operation === "update") {
             let updatedId = topic.split("/")[1];
             let temp = taskList;
@@ -315,7 +343,6 @@ const Main = () => {
         client.subscribe(String("public/#"), { qos: 0, retain: false });
         console.log("Subscribing to public/#");
         setTaskList(tasks);
-        console.log(taskList);
       })
       .catch(e => handleErrors(e));
   }

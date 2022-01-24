@@ -61,7 +61,7 @@ const PublicList = (props) => {
           tasks.map(t => {
             return (
               <ListGroup.Item as="li" key={t.id} className="d-flex w-100 justify-content-between">
-                  <TaskRowData key={t.id+"_elem"} task={t} />
+                  <TaskRowData task={t} />
               </ListGroup.Item>
             );
           })

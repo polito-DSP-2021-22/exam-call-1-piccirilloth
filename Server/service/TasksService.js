@@ -36,7 +36,7 @@ exports.addTask = function(task, owner) {
                         "description": createdTask.description,
                         "important": createdTask.important,
                         "private": createdTask.private,
-                        "deadline": dayjs(createdTask.deadline),
+                        "deadline": createdTask.deadline,
                         "project": createdTask.project,
                         "completed": createdTask.completed,
                         "active": createdTask.active,
