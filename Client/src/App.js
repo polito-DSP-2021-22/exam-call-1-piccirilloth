@@ -106,13 +106,66 @@ const Main = () => {
         });
         if(flag) {
           newList.push(parsedMessage);
-          return [...newList];
-        } else 
-          return [...newList];
+        }
       } else {
-        toRefresh = true;
-        return [...newList];
+        if(localStorage.getItem("totalPages")*10 - localStorage.getItem("totalItems")*localStorage.getItem("totalPages") == 0)
+          toRefresh = true;
+        else {
+          localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
+        }
       }
+      return [...newList];
+    });
+    if(toRefresh)
+      refreshPublic();
+  }
+
+  const deletePublicTask = (deleteId) => {
+    console.log(localStorage.getItem("totalPages"));
+    console.log(localStorage.getItem("currentPage"));
+    console.log(localStorage.getItem("totalItems"));
+    let toRefresh = false;
+
+    setTaskList(oldList => {
+      let temp = oldList;
+      let index = temp.findIndex(elem => elem.id == deleteId);
+      if(index >= 0) {
+        // the element is in the current list
+        temp = temp.filter(elem => elem.id != deleteId);
+      } else {
+        // the element is in another page
+        if(!(localStorage.getItem("totalPages") == localStorage.getItem("currentPage") && temp.length > 1)) 
+          toRefresh = true;
+      }
+      return [...temp];
+    });
+    if(toRefresh)
+      refreshPublic();
+  }
+
+  const updatePublicTask = (updateTask) => {
+    let toRefresh = false;
+    setTaskList(oldList => {
+      let temp = oldList;
+      if(updateTask.private) {
+        // it is possible that the task has become private, if it is in the view delete it
+        temp = temp.filter(elem => elem.id != updateTask.id);
+      } else {
+        let present = false;
+        temp.forEach(elem => {
+          if(elem.id == updateTask.id) {
+            present = true;
+            elem.description = updateTask.description;
+            elem.deadline = updateTask.deadline;
+            elem.private = updateTask.private;
+            elem.important = updateTask.important;
+            elem.project = updateTask.project;
+          }
+        });
+        if(!present && localStorage.getItem("totalPages") == 1)
+          toRefresh = true;
+      }
+      return [...temp];
     });
     if(toRefresh)
       refreshPublic();
@@ -147,22 +200,12 @@ const Main = () => {
             parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: parsedMessage.deadline == undefined ? undefined :  dayjs(parsedMessage.deadline) };
             console.log(parsedMessage);
             addNewPublicTask(parsedMessage);
-            //setTaskList([...taskList, parsedMessage]);
-            //refreshPublic();
-            //console.log(isPublic);
-            //if(isPublic)
-            //refreshPublic();
           } else if (parsedMessage.operation === "delete") {
             let deleteId = topic.split("/")[1];
-            setTaskList(oldList => {
-              let temp = oldList;
-              temp.filter(elem => elem.id != deleteId);
-              console.log(temp);
-              return [...temp];
-            });
-            //refreshPublic();
+            deletePublicTask(deleteId);
           } else if (parsedMessage.operation === "update") {
             let updatedId = topic.split("/")[1];
+            updatePublicTask(updatedId);
             let temp = taskList;
             let elemToUpdate = taskList.find(elem => elem.id == updatedId);
             console.log(parsedMessage);
