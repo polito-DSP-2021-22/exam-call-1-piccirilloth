@@ -229,7 +229,7 @@ async function assignTask(userId,taskId) {
           headers: {
               'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ id: userId, email:localStorage.getItem("email"), name:localStorage.getItem("name")}),
+          body: JSON.stringify({ id: userId, email:localStorage.getItem("email"), name:localStorage.getItem("username")}),
       }).then((response) => {
           if (response.ok) {
              resolve(null)

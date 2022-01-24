@@ -2,6 +2,7 @@
 
 var mqtt = require('mqtt');
 var Assignments = require('../service/AssignmentsService');
+var Tasks = require('../service/TasksService');
 var MQTTTaskMessage = require('./mqtt_task_message.js');
 
 var host = 'ws://127.0.0.1:8080';
@@ -40,7 +41,7 @@ mqtt_connection.on('connect', function () {
       taskMessageMap.set(selection.taskId, message);
       mqtt_connection.publish(String(selection.taskId), JSON.stringify(message), { qos: 0, retain: true });
     });
-  }) .catch(function (error) {
+  }).catch(function (error) {
     mqtt_connection.end();
   });
 })
@@ -54,8 +55,7 @@ module.exports.publishTaskMessage = function publishTaskMessage(taskId, message)
 };
 
 module.exports.publishPublicTaskMessage = function publishTaskMessage(taskId, message) {
-  console.log(message);
-  mqtt_connection.publish(String("public/" + taskId), JSON.stringify(message), { qos: 0, retain: true })
+  mqtt_connection.publish(String("public/" + taskId), JSON.stringify(message), { qos: 0, retain: false }) //for the moment set to false, think about it!
 };
 
 module.exports.saveMessage = function saveMessage(taskId, message) {

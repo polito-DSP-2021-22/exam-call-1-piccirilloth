@@ -23,6 +23,7 @@ import { Route, useRouteMatch, useHistory, Switch, Redirect } from 'react-router
 
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
+import { parse } from 'path';
 dayjs.extend(isToday);
 
 const EventEmitter = require('events');
@@ -65,14 +66,15 @@ const App = () => {
 const Main = () => {
 
   // This state is an object containing the list of tasks, and the last used ID (necessary to create a new task that has a unique ID)
-  const [taskList, setTaskList] = useState([]);
   const [OwnedTaskList, setOwnedTaskList] = useState([]);
   const [userList, setUserList] = useState([]);
   const [onlineList, setOnlineList] = useState([]);
   const [assignedTaskList, setAssignedTaskList] = useState([]);
-  const [publicTaskList, setPublicTaskList] = useState([]); // state representing the list of public tasks
+  const [taskList, setTaskList] = useState([]);
+  //const [publicTaskList, setPublicTaskList] = useState([]); // state representing the list of public tasks 
   const [dirty, setDirty] = useState(true);
-  const [dirtyPublic, setDirtyPublic] = useState(true);
+  const [publicDirty, setPublicDirty] = useState(false);
+
 
   const MODAL = { CLOSED: -2, ADD: -1 };
   const [selectedTask, setSelectedTask] = useState(MODAL.CLOSED);
@@ -84,7 +86,7 @@ const Main = () => {
 
   // active filter is read from the current url
   const match = useRouteMatch('/list/:filter');
-  const activeFilter = (match && match.params && match.params.filter) ? match.params.filter : 'owned';
+  const activeFilter = (match && match.params && match.params.filter) ? match.params.filter : null;
 
   const history = useHistory();
   // if another filter is selected, redirect to a new view/url
@@ -92,6 +94,111 @@ const Main = () => {
     history.push("/list/" + filter);
   }
 
+  const addNewPublicTask = (parsedMessage) => {
+    let toRefresh = false;
+    setTaskList(taskListold => {
+      let newList = taskListold;
+      if(newList.length < 10) {
+        let flag = true;
+        newList.forEach(elem => {
+          if(elem.id >= parsedMessage.id)
+            flag = false;
+        });
+        if(flag) {
+          newList.push(parsedMessage);
+          localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
+        }
+      } else {
+        let numElemLastPage = parseInt(localStorage.getItem("totalItems")) - parseInt((localStorage.getItem("totalPages"))-1)*10;
+        if(numElemLastPage == 10)
+          toRefresh = true;
+        else {
+          localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
+        }
+      }
+      return [...newList];
+    });
+    if(toRefresh)
+      refreshPublic();
+  }
+
+  const deletePublicTask = (deleteId) => {
+    let toRefresh = false;
+
+    setTaskList(oldList => {
+      let temp = oldList;
+      let index = temp.findIndex(elem => elem.id == deleteId);
+      if(index >= 0) {
+        // the element is in the current list
+        temp = temp.filter(elem => elem.id != deleteId);
+        localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
+      } else {
+        // the element is in another page
+        if(!(parseInt( localStorage.getItem("totalItems")) == parseInt( localStorage.getItem("totalItems")) && temp.length > 1)) 
+          toRefresh = true;
+      }
+      return [...temp];
+    });
+    if(toRefresh)
+      refreshPublic();
+  }
+
+  const updatePublicTask = (updateTask) => {
+    let toRefresh = false;
+    setTaskList(oldList => {
+      let temp = oldList;
+      if(updateTask.private) {
+        if(updateTask.previousPrivateValue != updateTask.private) {
+          // the element has become private, we have to delete it
+          let index = temp.findIndex(elem => elem.id == updateTask.id);
+          if(index !== -1) {
+            temp = temp.filter(elem => elem.id != updateTask.id);
+            localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
+          }
+          else if (!(localStorage.getItem("totalPages") == localStorage.getItem("currentPage") && temp.length > 1))
+            toRefresh = true;
+        }
+      } else {
+        let present = false;
+        temp.forEach(elem => {
+          if(elem.id == updateTask.id) {
+            present = true;
+            elem.description = updateTask.description;
+            elem.deadline = updateTask.deadline;
+            elem.private = updateTask.private;
+            elem.important = updateTask.important;
+            elem.project = updateTask.project;
+            elem.completed = updateTask.completed;
+            elem.owner = updateTask.owner;
+          }
+        });
+        if(!present && updateTask.previousPrivateValue != updateTask.private) {
+          // add the element with the information we have
+          if(temp.length < 10) {
+            let flag = true;
+            temp.forEach(elem => {
+              if(elem.id == updateTask.id)
+                flag = false;
+            });
+            if(flag) {
+              temp.push(updateTask);
+              localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
+            }
+          } else {
+            let numElemLastPage = localStorage.getItem("totalItems") - (localStorage.getItem("totalPages")-1)*10;
+            if(numElemLastPage == 10)
+              toRefresh = true;
+            else {
+              localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
+            }
+          }
+        }
+      }
+      return [...temp];
+    });
+    if(toRefresh)
+      refreshPublic();
+  }
 
   useEffect(() => {
 
@@ -115,58 +222,19 @@ const Main = () => {
           if (parsedMessage.status == "deleted") client.unsubscribe(topic);
           displayTaskSelection(topic, parsedMessage);
         } else {
-          // TODO: parsedMessage contains the operation!
           // the message is related to a public task
+          // TODO: the operation is not part of the message!!
           let parsedMessage = JSON.parse(message);
           if (parsedMessage.operation === "create") {
-            parsedMessage.id = topic.split("/")[1];
-            parsedMessage.deadline = parsedMessage.deadline === undefined ? undefined : dayjs(parsedMessage.deadline);
+            parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: parsedMessage.deadline == undefined ? undefined :  dayjs(parsedMessage.deadline) };
             console.log(parsedMessage);
-            console.log(publicTaskList);
-            //setPublicTaskList([...publicTaskList, parsedMessage]);
-            getPublicTasks();
-            //console.log(isPublic);
-            //if(isPublic)
-            //refreshPublic();
+            addNewPublicTask(parsedMessage);
           } else if (parsedMessage.operation === "delete") {
             let deleteId = topic.split("/")[1];
-            let temp = publicTaskList;
-            temp.filter(elem => elem.id != deleteId);
-            setPublicTaskList(temp);
-            //refreshPublic();
+            deletePublicTask(deleteId);
           } else if (parsedMessage.operation === "update") {
             let updatedId = topic.split("/")[1];
-            let temp = publicTaskList;
-            let elemUpdated = temp.find(elem => elem.id == updatedId) === undefined ? {} : temp.find(elem => elem.id == updatedId);
-            console.log(parsedMessage);
-            //refreshPublic();
-            if (parsedMessage.previousPrivateValue !== parsedMessage.private) {
-              // the private prop has changed
-              if (parsedMessage.private === true) {
-                // the task hase become private so we have to delete it from the publicTaskList
-                temp.filter(elem => elem.id != updatedId);
-                setPublicTaskList(temp);
-              } else {
-                // the element has become public, so we have to add it to the publicTaskList
-                refreshPublic();
-              }
-            } else if(elemUpdated !== undefined) {
-              //substitute the old element with the new one
-              elemUpdated.id = updatedId;
-              elemUpdated.description = parsedMessage.description;
-              elemUpdated.important = parsedMessage.important;
-              elemUpdated.project = parsedMessage.project;
-              elemUpdated.deadline = parsedMessage.deadline;
-              elemUpdated.private = parsedMessage.private;
-              temp.map(elem => {
-                if (elem.id == updatedId)
-                  return elemUpdated;
-                else
-                  return elem;
-              });
-              setPublicTaskList(temp);
-            } else
-              refreshPublic();
+            updatePublicTask(parsedMessage);
           }
         }
       } catch (e) {
@@ -300,7 +368,8 @@ const Main = () => {
             client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
             console.log("Subscribing to " + tasks[i].id);
           }
-          //client.unsubscribe(String("public/#"));
+          client.unsubscribe(String("public/#"));
+          console.log("unsubscribing from public/#");
           setTaskList(tasks);
         })
         .catch(e => handleErrors(e));
@@ -310,35 +379,12 @@ const Main = () => {
   const getPublicTasks = () => {
     API.getPublicTasks()
       .then(tasks => {
-        setPublicTaskList(tasks);
-        console.log(publicTaskList);
+        client.subscribe(String("public/#"), { qos: 0, retain: false });
+        console.log("Subscribing to public/#");
+        setTaskList(tasks);
       })
       .catch(e => handleErrors(e));
   }
-
-  useEffect(() => {
-    if(loggedIn && dirtyPublic) {
-      API.getPublicTasks()
-      .then(tasks => {
-        client.subscribe(String("public/#"), { qos: 0, retain: true });
-        console.log("Subscribing to public/#");
-        setPublicTaskList(tasks);
-      })
-      .catch(e => handleErrors(e));
-      console.log(publicTaskList);
-      setDirtyPublic(false);
-    }
-  }, [dirtyPublic]);
-
-  useEffect(() => {
-    API.getPublicTasks()
-      .then(tasks => {
-        client.subscribe(String("public/#"), { qos: 0, retain: true });
-        console.log("Subscribing to public/#");
-        setPublicTaskList(tasks);
-      })
-      .catch(e => handleErrors(e));
-  }, []);
 
   const getAllOwnedTasks = () => {
     API.getAllOwnedTasks()
@@ -359,7 +405,6 @@ const Main = () => {
   const refreshTasks = (filter, page) => {
     API.getTasks(filter, page)
       .then(tasks => {
-        console.log(filter);
         for (var i = 0; i < tasks.length; i++) {
           client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
           console.log("Subscribing to " + tasks[i].id)
@@ -373,9 +418,10 @@ const Main = () => {
   const refreshPublic = (page) => {
     API.getPublicTasks(page)
       .then(tasks => {
-        setPublicTaskList(tasks);
+        setTaskList(tasks);
         // setTaskList(tasks); //align public and non public task lists
-        setDirty(true);
+        // setDirty(true);
+        setDirty(false);
       })
       .catch(e => handleErrors(e));
   }
@@ -400,23 +446,34 @@ const Main = () => {
 
 
   useEffect(() => {
-    if (loggedIn && dirty) {
-      API.getTasks(activeFilter, localStorage.getItem('currentPage'))
-        .then(tasks => {
-          for (var i = 0; i < tasks.length; i++) {
-            client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
-            console.log("Subscribing to " + tasks[i].id)
-          }
-          /*client.subscribe(String("public/#"), { qos: 0, retain: true });
-          console.log("Subscribing to public/#");*/
-          setTaskList(tasks);
-          // setPublicTaskList(tasks);
-          setDirty(false);
-        })
-        .catch(e => handleErrors(e));
-        getPublicTasks();
+    if (activeFilter && loggedIn && (dirty)) {
+      /*if (dirtyPublic) {
+        API.getPublicTasks(localStorage.getItem('currentPage'))
+          .then(tasks => {
+            for (var i = 0; i < tasks.length; i++) {
+              client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
+              console.log("Subscribing to " + tasks[i].id)
+            }
+            setTaskList(tasks);
+            // setPublicTaskList(tasks);
+            setDirtyPublic(false);
+          })
+          .catch(e => handleErrors(e));
+      } else */if (dirty) {
+        API.getTasks(activeFilter, localStorage.getItem('currentPage'))
+          .then(tasks => {
+            for (var i = 0; i < tasks.length; i++) {
+              client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
+              console.log("Subscribing to " + tasks[i].id)
+            }
+            setTaskList(tasks);
+            // setPublicTaskList(tasks);
+            setDirty(false);
+          })
+          .catch(e => handleErrors(e));
+      }
     }
-  }, [activeFilter, dirty, loggedIn, user])
+  }, [activeFilter, dirty, loggedIn, user/*, dirtyPublic*/])
 
   // show error message in toast
   const handleErrors = (err) => {
@@ -476,7 +533,7 @@ const Main = () => {
     setLoggedIn(false);
     setUser(null);
     setTaskList([]);
-    setPublicTaskList([]);
+    // setPublicTaskList([]);
     setDirty(true);
     localStorage.removeItem('userId');
     localStorage.removeItem('email');
@@ -511,7 +568,7 @@ const Main = () => {
             </Col>
             <Col className="col-8">
               <Row className="vh-100 below-nav">
-                <PublicMgr publicList={publicTaskList} refreshPublic={refreshPublic}></PublicMgr>
+                <PublicMgr publicList={taskList} refreshPublic={refreshPublic}></PublicMgr>
               </Row>
             </Col>
           </Row>
