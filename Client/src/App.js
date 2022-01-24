@@ -106,13 +106,14 @@ const Main = () => {
         });
         if(flag) {
           newList.push(parsedMessage);
+          localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
         }
       } else {
-        let numElemLastPage = localStorage.getItem("totalItems") - (localStorage.getItem("totalPages")-1)*10;
+        let numElemLastPage = parseInt(localStorage.getItem("totalItems")) - parseInt((localStorage.getItem("totalPages"))-1)*10;
         if(numElemLastPage == 10)
           toRefresh = true;
         else {
-          localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
+          localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
         }
       }
       return [...newList];
@@ -122,9 +123,6 @@ const Main = () => {
   }
 
   const deletePublicTask = (deleteId) => {
-    console.log(localStorage.getItem("totalPages"));
-    console.log(localStorage.getItem("currentPage"));
-    console.log(localStorage.getItem("totalItems"));
     let toRefresh = false;
 
     setTaskList(oldList => {
@@ -133,9 +131,10 @@ const Main = () => {
       if(index >= 0) {
         // the element is in the current list
         temp = temp.filter(elem => elem.id != deleteId);
+        localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
       } else {
         // the element is in another page
-        if(!(localStorage.getItem("totalPages") == localStorage.getItem("currentPage") && temp.length > 1)) 
+        if(!(parseInt( localStorage.getItem("totalItems")) == parseInt( localStorage.getItem("totalItems")) && temp.length > 1)) 
           toRefresh = true;
       }
       return [...temp];
@@ -149,8 +148,16 @@ const Main = () => {
     setTaskList(oldList => {
       let temp = oldList;
       if(updateTask.private) {
-        // it is possible that the task has become private, if it is in the view delete it
-        temp = temp.filter(elem => elem.id != updateTask.id);
+        if(updateTask.previousPrivateValue != updateTask.private) {
+          // the element has become private, we have to delete it
+          let index = temp.findIndex(elem => elem.id == updateTask.id);
+          if(index !== -1) {
+            temp = temp.filter(elem => elem.id != updateTask.id);
+            localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
+          }
+          else if (!(localStorage.getItem("totalPages") == localStorage.getItem("currentPage") && temp.length > 1))
+            toRefresh = true;
+        }
       } else {
         let present = false;
         temp.forEach(elem => {
@@ -161,10 +168,31 @@ const Main = () => {
             elem.private = updateTask.private;
             elem.important = updateTask.important;
             elem.project = updateTask.project;
+            elem.completed = updateTask.completed;
+            elem.owner = updateTask.owner;
           }
         });
-        if(!present && localStorage.getItem("totalPages") == 1)
-          toRefresh = true;
+        if(!present && updateTask.previousPrivateValue != updateTask.private) {
+          // add the element with the information we have
+          if(temp.length < 10) {
+            let flag = true;
+            temp.forEach(elem => {
+              if(elem.id == updateTask.id)
+                flag = false;
+            });
+            if(flag) {
+              temp.push(updateTask);
+              localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
+            }
+          } else {
+            let numElemLastPage = localStorage.getItem("totalItems") - (localStorage.getItem("totalPages")-1)*10;
+            if(numElemLastPage == 10)
+              toRefresh = true;
+            else {
+              localStorage.setItem("totalItems", localStorage.getItem("totalItems")+1);
+            }
+          }
+        }
       }
       return [...temp];
     });
@@ -206,7 +234,7 @@ const Main = () => {
             deletePublicTask(deleteId);
           } else if (parsedMessage.operation === "update") {
             let updatedId = topic.split("/")[1];
-            updatePublicTask(updatedId);
+            updatePublicTask(parsedMessage);
           }
         }
       } catch (e) {

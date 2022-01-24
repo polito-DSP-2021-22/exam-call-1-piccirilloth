@@ -321,7 +321,7 @@ exports.getAssignedTasksTotal = function(req) {
                 reject(403);
             }
             else {
-                const sql3 = "SELECT private FROM tasks t WHERE t.id = ?";
+                const sql3 = "SELECT private, completed FROM tasks t WHERE t.id = ?";
                 db.all(sql3, [taskId], (err, rows) => {
                     if (err)
                         reject(err);
@@ -329,6 +329,7 @@ exports.getAssignedTasksTotal = function(req) {
                         reject(404);
                     else {
                         let previousPrivateValue = rows[0].private === 0 ? false : true;
+                        let completed = rows[0].completed === 0 ? false : true;
                         const sql2 = 'DELETE FROM assignments WHERE task = ?';
                         db.run(sql2, [taskId], (err) => {
                             if (err)
@@ -364,10 +365,13 @@ exports.getAssignedTasksTotal = function(req) {
                                         message.description = task.description;
                                         message.important = task.important;
                                         message.project = task.project;
+                                        message.deadline = task.deadline;
                                         message.private = task.private;
                                         message.previousPrivateValue = previousPrivateValue;
                                         message.self = task.self;
                                         message.operation = "update";
+                                        message.completed = completed;
+                                        message.owner = owner;
                                         mqtt.publishPublicTaskMessage(task.id, message);
                                         resolve(null);
                                     }
