@@ -134,7 +134,9 @@ const Main = () => {
         localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
       } else {
         // the element is in another page
-        if(!(parseInt( localStorage.getItem("totalItems")) == parseInt( localStorage.getItem("totalItems")) && temp.length > 1)) 
+        if(parseInt(localStorage.getItem("currentPage")) == parseInt(localStorage.getItem("totalPages")) && temp.length > 1) 
+          localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
+        else
           toRefresh = true;
       }
       return [...temp];
