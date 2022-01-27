@@ -73,7 +73,6 @@ const Main = () => {
   const [taskList, setTaskList] = useState([]);
   //const [publicTaskList, setPublicTaskList] = useState([]); // state representing the list of public tasks 
   const [dirty, setDirty] = useState(true);
-  const [publicDirty, setPublicDirty] = useState(false);
 
 
   const MODAL = { CLOSED: -2, ADD: -1 };
@@ -110,8 +109,10 @@ const Main = () => {
         }
       } else {
         let numElemLastPage = parseInt(localStorage.getItem("totalItems")) - parseInt((localStorage.getItem("totalPages"))-1)*10;
-        if(numElemLastPage == 10)
+        if(numElemLastPage == 10) {
+          localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
           toRefresh = true;
+        }
         else {
           localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
         }
@@ -132,6 +133,8 @@ const Main = () => {
         // the element is in the current list
         temp = temp.filter(elem => elem.id != deleteId);
         localStorage.setItem("totalItems", parseInt( localStorage.getItem("totalItems"))-1);
+        if(temp.length === 0)
+          toRefresh = true;
       } else {
         // the element is in another page
         if(parseInt(localStorage.getItem("currentPage")) == parseInt(localStorage.getItem("totalPages")) && temp.length > 1) 
@@ -235,7 +238,7 @@ const Main = () => {
             let deleteId = topic.split("/")[1];
             deletePublicTask(deleteId);
           } else if (parsedMessage.operation === "update") {
-            let updatedId = topic.split("/")[1];
+            parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: parsedMessage.deadline == undefined ? undefined :  dayjs(parsedMessage.deadline) };
             updatePublicTask(parsedMessage);
           }
         }
