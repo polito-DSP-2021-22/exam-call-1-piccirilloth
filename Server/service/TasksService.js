@@ -5,7 +5,6 @@ const db = require('../components/db');
 var constants = require('../utils/constants.js');
 const mqtt = require('../components/mqtt');
 const MQTTTaskMessage = require('../components/mqtt_task_message.js');
-const MQTTPublicTaskMessage = require('../components/mqtt_public_task_message.js');
 const dayjs = require('dayjs');
 
 
@@ -44,8 +43,6 @@ exports.addTask = function(task, owner) {
                         "self": createdTask.self
                     };
                     let operation = "create";
-                    console.log(task);
-                    //let message = new MQTTPublicTaskMessage(operation, task);
                     task.operation = operation;
                     mqtt.publishPublicTaskMessage(createdTask.id, task);
                 }
@@ -361,7 +358,6 @@ exports.getAssignedTasksTotal = function(req) {
                                         reject(err);
                                     } else {
                                         let message = {};
-                                        console.log(task);
                                         message.description = task.description;
                                         message.important = task.important;
                                         message.project = task.project;

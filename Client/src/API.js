@@ -48,6 +48,7 @@ if (page) {
     localStorage.setItem('totalPages',  json.totalPages);
     localStorage.setItem('currentPage', json.currentPage);
     localStorage.setItem('totalItems',  json.totalItems);
+    localStorage.setItem('offset',  json.size);
     const tasksJson = json.tasks;
     return tasksJson.map((task) => Object.assign({}, task, { deadline: task.deadline && dayjs(task.deadline) }))
     
@@ -70,6 +71,7 @@ const getPublicTasks = async (page) => {
       localStorage.setItem('totalPages',  json.totalPages);
       localStorage.setItem('currentPage', json.currentPage);
       localStorage.setItem('totalItems',  json.totalItems);
+      localStorage.setItem('offset',  json.size);
       const tasksJson = json.tasks;
       return tasksJson.map((task) => Object.assign({}, task, { deadline: task.deadline && dayjs(task.deadline) }))
     })

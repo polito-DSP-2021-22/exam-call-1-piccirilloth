@@ -108,7 +108,7 @@ const Main = () => {
           localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
         }
       } else {
-        let numElemLastPage = parseInt(localStorage.getItem("totalItems")) - parseInt((localStorage.getItem("totalPages"))-1)*10;
+        let numElemLastPage = parseInt(localStorage.getItem("totalItems")) - parseInt((localStorage.getItem("totalPages"))-1)*parseInt(localStorage.getItem("offset"));
         if(numElemLastPage == 10) {
           localStorage.setItem("totalItems", parseInt(localStorage.getItem("totalItems"))+1);
           toRefresh = true;
@@ -228,11 +228,9 @@ const Main = () => {
           displayTaskSelection(topic, parsedMessage);
         } else {
           // the message is related to a public task
-          // TODO: the operation is not part of the message!!
           let parsedMessage = JSON.parse(message);
           if (parsedMessage.operation === "create") {
             parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: parsedMessage.deadline == undefined ? undefined :  dayjs(parsedMessage.deadline) };
-            console.log(parsedMessage);
             addNewPublicTask(parsedMessage);
           } else if (parsedMessage.operation === "delete") {
             let deleteId = topic.split("/")[1];
@@ -424,8 +422,6 @@ const Main = () => {
     API.getPublicTasks(page)
       .then(tasks => {
         setTaskList(tasks);
-        // setTaskList(tasks); //align public and non public task lists
-        // setDirty(true);
         setDirty(false);
       })
       .catch(e => handleErrors(e));
@@ -452,19 +448,7 @@ const Main = () => {
 
   useEffect(() => {
     if (activeFilter && loggedIn && (dirty)) {
-      /*if (dirtyPublic) {
-        API.getPublicTasks(localStorage.getItem('currentPage'))
-          .then(tasks => {
-            for (var i = 0; i < tasks.length; i++) {
-              client.subscribe(String(tasks[i].id), { qos: 0, retain: true });
-              console.log("Subscribing to " + tasks[i].id)
-            }
-            setTaskList(tasks);
-            // setPublicTaskList(tasks);
-            setDirtyPublic(false);
-          })
-          .catch(e => handleErrors(e));
-      } else */if (dirty) {
+      if (dirty) {
         API.getTasks(activeFilter, localStorage.getItem('currentPage'))
           .then(tasks => {
             for (var i = 0; i < tasks.length; i++) {
@@ -478,7 +462,7 @@ const Main = () => {
           .catch(e => handleErrors(e));
       }
     }
-  }, [activeFilter, dirty, loggedIn, user/*, dirtyPublic*/])
+  }, [activeFilter, dirty, loggedIn, user])
 
   // show error message in toast
   const handleErrors = (err) => {
@@ -538,7 +522,6 @@ const Main = () => {
     setLoggedIn(false);
     setUser(null);
     setTaskList([]);
-    // setPublicTaskList([]);
     setDirty(true);
     localStorage.removeItem('userId');
     localStorage.removeItem('email');

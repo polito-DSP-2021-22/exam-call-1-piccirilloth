@@ -101,6 +101,7 @@ module.exports.getPublicTasks = function getPublicTasks(req, res, next) {
                             currentPage: pageNo,
                             totalItems: numOfTasks,
                             tasks: response,
+                            size: constants.OFFSET,
                             next: "/api/tasks/public?pageNo=" + next
                         });
                     }
