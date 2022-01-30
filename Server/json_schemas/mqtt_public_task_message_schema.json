@@ -16,7 +16,8 @@
             "enum": [
                 "create",
                 "delete",
-                "update"
+                "update",
+                "complete"
             ]
         },
         "task": {
