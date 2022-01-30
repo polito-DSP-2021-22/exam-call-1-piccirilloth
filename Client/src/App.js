@@ -205,6 +205,17 @@ const Main = () => {
       refreshPublic();
   }
 
+  const completePublicTask = (completeId) => {
+    setTaskList(oldList => {
+      let temp = oldList;
+      temp.forEach(elem => {
+        if(elem.id == completeId)
+          elem.completed = true;
+      });
+      return [...temp];
+    })
+  }
+
   useEffect(() => {
 
 
@@ -238,6 +249,9 @@ const Main = () => {
           } else if (parsedMessage.operation === "update") {
             parsedMessage = { ...parsedMessage, id: topic.split("/")[1], deadline: parsedMessage.deadline == undefined ? undefined :  dayjs(parsedMessage.deadline) };
             updatePublicTask(parsedMessage);
+          } else if(parsedMessage.operation === "complete") {
+            let completeId = topic.split("/")[1];
+            completePublicTask(completeId);
           }
         }
       } catch (e) {

@@ -366,7 +366,7 @@ exports.getAssignedTasksTotal = function(req) {
                                         message.previousPrivateValue = previousPrivateValue;
                                         message.self = task.self;
                                         message.operation = "update";
-                                        message.completed = completed;
+                                        message.completed = task.completed;
                                         message.owner = owner;
                                         mqtt.publishPublicTaskMessage(task.id, message);
                                         resolve(null);
@@ -413,6 +413,10 @@ exports.getAssignedTasksTotal = function(req) {
                         db.run(sql3, [taskId], function(err) {
                             if (err) {
                                 reject(err);
+                                let message = {
+                                    "operation": "complete"
+                                };
+                                mqtt.publishPublicTaskMessage(taskId, message);
                             } else {
                                 resolve(null);
                             }
