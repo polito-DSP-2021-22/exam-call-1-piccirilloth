@@ -413,11 +413,11 @@ exports.getAssignedTasksTotal = function(req) {
                         db.run(sql3, [taskId], function(err) {
                             if (err) {
                                 reject(err);
+                            } else {
                                 let message = {
                                     "operation": "complete"
                                 };
                                 mqtt.publishPublicTaskMessage(taskId, message);
-                            } else {
                                 resolve(null);
                             }
                         })
