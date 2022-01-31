@@ -1,6 +1,6 @@
 class Task{    
     constructor(id, description, important, privateTask, deadline, project, completed, active) {
-        if(id)
+        if(id || id == 0)
             this.id = id;
 
         this.description = description;
