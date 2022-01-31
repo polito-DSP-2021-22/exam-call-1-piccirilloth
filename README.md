@@ -24,13 +24,13 @@ My choice has been to set the retain flag to **false** because in this solution 
 
 ## MQTT message structure
 As described in the JSON schema *Server/json_schemas/mqtt_public_task_message_schema.json*, the MQTT message related to public tasks information is composed by the following fields:
-  - ```operation```: this attribute of type string represend what kind of operation has been performed on the task, it can have three values: 
+  - ```operation```: this attribute of type string represents what kind of operation has been performed on the task, it can have three values: 
     - **create**: when a new task is created
     - **delete**: when a task is deleted
     - **update**: when a task is updated
     - **complete**: when a task has marked as completed
-  - ```previousPrivateValue```: this attribute of type boolean is required when ```operation``` is equal to **update** and it represent the value of the ```private``` attribute of the task **before** the update operation, it is useful to identify if a task has become public or not
-  - ```taskInfo```: this attribute represent the information about the task and it is a reference to the schema *Server/json_schemas/mqtt_task_message_schema.json*, it is required when the ```operation``` attribute is equal to **create** or equal to **update**
+  - ```previousPrivateValue```: this attribute of type boolean is required when ```operation``` is equal to **update** and it represents the value of the ```private``` attribute of the task **before** the update operation, it is useful to identify if a task has become public or not
+  - ```taskInfo```: this attribute represents the information about the task and it is a reference to the schema *Server/json_schemas/mqtt_task_message_schema.json*, it is required when the ```operation``` attribute is equal to **create** or equal to **update**
 
 ## MQTT message management
 ### operation type:
@@ -46,4 +46,4 @@ As described in the JSON schema *Server/json_schemas/mqtt_public_task_message_sc
   - if the task has become private, it has to be deleted, so the same operations of the *delete* action are executed
   - if the element is in the current page, simply the information about the task are updated
   - if the element is not present in the current page and the value of ```private``` field has become *false*, the task has to be added to the local list, so the same operations of the *create* action are executed
-- **complete**: when existing public task become complete, the server publishes an MQTT message on topic *public/taskId* that contains only the ```operation``` filed setted to *complete*. When this message is received from a client, it simply checks if the completed task is in the current page, if so the completed filed of the task is updated
+- **complete**: when existing public task become complete, the server publishes an MQTT message on topic *public/taskId* that contains only the ```operation``` field setted to *complete*. When this message is received from a client, it simply checks if the completed task is in the current page, if so the completed filed of the task is updated
